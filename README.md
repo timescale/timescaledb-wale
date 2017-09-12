@@ -1,7 +1,9 @@
 # WAL-e sidecar for timescaledb docker container.
 
 This docker image is used as a backup sidecar container to a postgresql container. It makes periodic
-backups to wal-e (https://github.com/wal-e/wal-e) supported backups as well as WAL backups.
+backups to wal-e (https://github.com/wal-e/wal-e) supported backups as well as WAL backups. Wal-e
+will not backup configuration files so they need to be stores separately. If they are stored where the
+wal-e sidecar container can reach them, they can be restored during the wal-e restore process. 
 
 ## Configuration
 
@@ -42,3 +44,4 @@ WALE_LISTEN_PORT | port  | 5000
 CRON_TIMING | Cron string for periodic backups | "0 0 \* \* \*" (24h)
 RECOVERY_ADDITION | line to add to recovery.conf, typically restore timestamp | -
 PGCONF_BACKUP_DIR | directory holding configuration files to restore after data dir restore | -
+

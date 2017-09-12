@@ -14,7 +14,7 @@ WALE_RESTORE_LABEL=${WALE_RESTORE_LABEL:-LATEST}
 WALE_SIDECAR_HOSTNAME=${WALE_SIDECAR_HOSTNAME:-localhost}
 WALE_LISTEN_PORT=${WALE_LISTEN_PORT:-5000}
 
-CRON_TIMING=${CRON_TIMING:-'* * * * *'}
+CRON_TIMING=${CRON_TIMING:-'0 0 * * *'}
 
 while [ ! -f $WALE_INIT_LOCKFILE ] ;
 do
@@ -22,7 +22,9 @@ do
     echo 'waiting for timescaledb startup script'
 done
 
-echo "$CRON_TIMING PGHOST=$PGHOST PGDATA=$PGDATA PGPORT=$PGPORT bash /usr/src/app/backup_push.sh >> /var/log/cron.log 2>&1" > /wal-e-backup-cron.tmp
+# Setup cron
+export > /env_vars
+echo "$CRON_TIMING bash -l -c '. /env_vars; /usr/src/app/backup_push.sh >> /var/log/cron.log 2>&1'" > /wal-e-backup-cron.tmp
 echo "" >> /wal-e-backup-cron.tmp
 
 crontab /wal-e-backup-cron.tmp

@@ -14,6 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/wale-rest.py .
 COPY start.sh .
+COPY setup_cron.sh .
 COPY backup_push.sh .
+RUN chmod +x backup_push.sh
 
 CMD [ "bash", "./start.sh" ]

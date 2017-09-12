@@ -2,7 +2,6 @@
 
 WALE_BIN=${WALE_BIN:-/usr/local/bin/wal-e}
 
-
 set +e
 while true; do
     sleep 1
