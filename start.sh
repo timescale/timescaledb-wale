@@ -11,19 +11,25 @@ START_MODE=${START_MODE:-CONTINOUS_BACKUP}
 WALE_BIN=${WALE_BIN:-/usr/local/bin/wal-e}
 WALE_INIT_LOCKFILE=$PGDATA/wale_init_lockfile
 WALE_RESTORE_LABEL=${WALE_RESTORE_LABEL:-LATEST}
-WALE_HOSTNAME=${WALE_HOSTNAME:-localhost}
-WALE_PORT=${WALE_PORT:-5000}
-REVOCERY_ADDITION=${RECOVERY_ADDITION:-""}
+WALE_SIDECAR_HOSTNAME=${WALE_SIDECAR_HOSTNAME:-localhost}
+WALE_LISTEN_PORT=${WALE_LISTEN_PORT:-5000}
+
+CRON_TIMING=${CRON_TIMING:-'* * * * *'}
 
 while [ ! -f $WALE_INIT_LOCKFILE ] ;
 do
     sleep 1
-    echo 'waiting for timescaledb startup script startup'
+    echo 'waiting for timescaledb startup script'
 done
+
+echo "$CRON_TIMING PGHOST=$PGHOST PGDATA=$PGDATA PGPORT=$PGPORT bash /usr/src/app/backup_push.sh >> /var/log/cron.log 2>&1" > /wal-e-backup-cron.tmp
+echo "" >> /wal-e-backup-cron.tmp
+
+crontab /wal-e-backup-cron.tmp
+cron 
 
 case $START_MODE in
     INITIAL)
-        mkdir -p "$PGDATA"
 	chmod 700 "$PGDATA"
 
         echo "pushing base backup"
@@ -32,16 +38,22 @@ case $START_MODE in
         eval backup_push.sh
         ;;
     RESTORE)
-        mkdir -p "$PGDATA"
 	chmod 700 "$PGDATA"
         echo "fetching base backup"        
 
         $WALE_BIN $WALE_RESTORE_FLAGS backup-fetch $PGDATA $WALE_RESTORE_LABEL
 
-        echo "restore_command = '/usr/bin/wget ${WALE_HOSTNAME}:${WALE_PORT}/fetch/%f -O -'" > $PGDATA/recovery.conf
+        echo "restore_command = '/usr/bin/wget ${WALE_SIDECAR_HOSTNAME}:${WALE_LISTEN_PORT}/fetch/%f -O -'" > $PGDATA/recovery.conf
         
-        if [ -z $RECOVERY_ADDITION ]; then
+        if [ ! -z $RECOVERY_ADDITION ]; then
             echo "$RECOVERY_ADDITION" >> $PGDATA/recovery.conf
+        fi
+
+        if [ ! -z $PGCONF_BACKUP_DIR ]; then
+            echo "Restoring confs: $PGCONF_BACKUP_DIR/*.conf $PGDATA/ "
+            cp $PGCONF_BACKUP_DIR/*.conf $PGDATA/
+        else
+            echo "No config files restored"
         fi
         
         ;;
