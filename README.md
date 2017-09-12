@@ -25,8 +25,7 @@ checkpoint_timeout=700
 ### Side car configurations
 The wal-e container is configured using environment variables. First, the startup operation is controlled by
 the `START_MODE` variable where the options are `CONTINOUS_BACKUP`, `INITIAL`, or `RESTORE`.
-
-START_MODE settings |
+ 
 MODE | Operation
 ---- | ----
 INITIAL | Pushes a base backup before starting to accept archive commands 
@@ -35,11 +34,11 @@ RESTORE | Fetches a backup, creates a restore.conf, and optionally restores conf
 
 The backup and restore operation can be further configured through the following variables.
 
-Variable | use | default
+Variable | Use | Default
 --- | --- | ---
 WALE_RESTORE_LABEL | label of backup to pull when restoring | LATEST 
-WALE_SIDECAR_HOSTNAME | hostname where the side car can be reached | localhost
+WALE_SIDECAR_HOSTNAME | hostname where the side car can be reached | localhost
 WALE_LISTEN_PORT | port  | 5000 
-CRON_TIMING | Cron string for periodic backups | '0 0 * * *' (24h)
+CRON_TIMING | Cron string for periodic backups | "0 0 \* \* \*" (24h)
 RECOVERY_ADDITION | line to add to recovery.conf, typically restore timestamp | -
 PGCONF_BACKUP_DIR | directory holding configuration files to restore after data dir restore | -
