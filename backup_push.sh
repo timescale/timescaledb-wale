@@ -5,7 +5,7 @@ WALE_BIN=${WALE_BIN:-/usr/local/bin/wal-e}
 set +e
 while true; do
     sleep 1
-
+    echo "Waiting for postgres."
     pg_isready
 
     if [[ $? == 0 ]] ; then
