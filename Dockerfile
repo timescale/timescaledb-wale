@@ -1,6 +1,5 @@
 FROM python:2.7-stretch
 
-
 RUN apt-get update && apt-get install curl lzop pv postgresql-client-9.6 cron -y \
      && rm -rf /var/lib/apt/lists/*
 

@@ -36,7 +36,7 @@ case $START_MODE in
         echo "pushing base backup"
         rm $WALE_INIT_LOCKFILE
 
-        eval backup_push.sh
+        eval ./backup_push.sh
         ;;
     RESTORE)
 	chmod 700 "$PGDATA"
