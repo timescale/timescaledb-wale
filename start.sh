@@ -36,7 +36,7 @@ case $START_MODE in
         echo "pushing base backup"
         rm $WALE_INIT_LOCKFILE
 
-        eval ./backup_push.sh
+        #PGHOST=localhost PGUSER=postgres ./backup_push.sh
         ;;
     RESTORE)
 	chmod 700 "$PGDATA"
@@ -63,6 +63,6 @@ case $START_MODE in
         ;;
 esac
 
-rm $WALE_INIT_LOCKFILE
+rm -f $WALE_INIT_LOCKFILE
 
 python ./wale-rest.py
