@@ -1,5 +1,5 @@
-# Env var START_MODE controls initial command 
-# INITIAL - push a base backup 
+# Env var START_MODE controls initial command
+# INITIAL - push a base backup
 # RESTORE - fetch a base backup
 # CONTINOUS_BACKUP - no initial command, default
 
@@ -27,25 +27,23 @@ export > /env_vars
 echo "$CRON_TIMING bash -l -c '. /env_vars; /usr/src/app/backup_push.sh >> /var/log/cron.log 2>&1'" > /wal-e-backup-cron.tmp
 echo "" >> /wal-e-backup-cron.tmp
 crontab /wal-e-backup-cron.tmp
-cron 
+cron
 
+echo "starting in mode ${START_MODE}"
 case $START_MODE in
     BACKUP_PUSH)
 	chmod 700 "$PGDATA"
-
-        echo "pushing base backup"
         rm $WALE_INIT_LOCKFILE
-
         #PGHOST=localhost PGUSER=postgres ./backup_push.sh
         ;;
     RESTORE)
-	chmod 700 "$PGDATA"
-        echo "fetching base backup"        
+        chmod 700 "$PGDATA"
+        echo "fetching base backup"
 
         $WALE_BIN $WALE_RESTORE_FLAGS backup-fetch $PGDATA $WALE_RESTORE_LABEL
 
-        echo "restore_command = '/usr/bin/wget ${WALE_SIDECAR_HOSTNAME}:${WALE_LISTEN_PORT}/fetch/%f -O -'" > $PGDATA/recovery.conf
-        
+        echo "restore_command = '/usr/bin/wget ${WALE_SIDECAR_HOSTNAME}:${WALE_LISTEN_PORT}/wal-fetch/%f -O -'" > $PGDATA/recovery.conf
+
         if [ ! -z $RECOVERY_ADDITION ]; then
             echo "$RECOVERY_ADDITION" >> $PGDATA/recovery.conf
         fi
@@ -56,7 +54,7 @@ case $START_MODE in
         else
             echo "No config files restored"
         fi
-        
+
         ;;
     *)
         echo "starting continous backup"
@@ -64,5 +62,8 @@ case $START_MODE in
 esac
 
 rm -f $WALE_INIT_LOCKFILE
+if [ -f $WALE_INIT_LOCKFILE ] ; then
+    echo "Lock file still around!"
+fi
 
 python ./wale-rest.py
