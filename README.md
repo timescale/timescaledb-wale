@@ -47,11 +47,12 @@ Variable | Use | Default
 WALE_RESTORE_LABEL | label of backup to pull when restoring | LATEST
 WALE_SIDECAR_HOSTNAME | hostname where the sidecar can be reached | localhost
 WALE_LISTEN_PORT | port  | 5000
+WALE_INIT_LOCKFILE | path to lock file | `${PGDATA}/wale_init_lockfile`
 CRON_TIMING | Cron string for periodic backups | "0 0 \* \* \*" (24h)
 RECOVERY_ADDITION | line to add to recovery.conf, typically timestamp for PIT recovery | -
-PGCONF_BACKUP_DIR | directory path holding configuration files to restore after data dir restore | -
-PGDATA | path to mounted TimescaleDB/PostgreSQL data dir | -
-
+PGCONF_BACKUP_DIR | directory path holding configuration files to restore after data dir restore | -
+PGDATA | the TimescaleDB/PostgreSQL data dir | `/var/lib/postgresql/data`
+PGWAL | the TimescaleDB/PostgreSQL WAL log dir | `${PGDATA}/pg_wal`
 
 ### Running WAL-E commands
 The WAL-E container can be used to run arbitrary WAL-E commands using
