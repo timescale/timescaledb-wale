@@ -1,65 +1,71 @@
-# WAL-E sidecar for TimescaleDB
+# WAL-E Docker image
 
 This docker image can be used as a backup "sidecar" container to a
-TimescaleDB container. It makes periodic
-backups using WAL-E (https://github.com/wal-e/wal-e) as well as WAL
-backups.  WAL-E will not backup configuration files so they need to be
-stored separately. If they are stored where the
-WAL-E sidecar container can reach them, they can be restored during the
-WAL-E restore process using the environment variable `PGCONF_BACKUP_DIR`.
+TimescaleDB (or PostgreSQL) container. It can make base backups using
+[WAL-E](https://github.com/wal-e/wal-e) as well as continuous WAL
+archiving.  WAL-E will not backup configuration files so they need to be
+handled separately.
+
+## Functionality
+
+The docker image contains WAL-E and a small web service that exposes
+WAL-E's `wal-push`, `wal-fetch`, or `backup-push` commands via HTTP
+requests. This allows a TimescaleDB container to trigger backups in
+the sidecar via HTTP. Triggering happens via `GET` requests, allowing
+use of, e.g., `wget`. An example request is:
+
+```bash
+wget http://localhost/wal-push/<WAL_SEGMENT_NAME> -O -
+```
+
+to trigger a WAL push.
+
+WAL-E can be invoked directly by running the image as so:
+
+```bash
+docker run -it --rm timescale/timescale-wale wal-e <command>
+
+```
+
+This can be used to do base backups and restore, for instance, using a
+Kubernetes init container.
 
 ## Configuration
 
-### Modifications to TimescaleDB container
+To do backups, the TimescaleDB and the WAL-E containers need to share
+`PGDATA` and `PGWAL` disk volumes so that the WAL-E sidecar container
+can access the database files it needs to backup.
 
-The TimescaleDB and the WAL-E containers need to share `PGDATA` and
-`PGWAL` disk volumes. Before starting the TimescaleDB instance,
-the TimescaleDB container needs to create a
-`$PGDATA/wale_init_lockfile` (our [official Docker release][ts-docker]
-supports this). When the WAL-E sidecar container
-removes that file, it is safe for TimescaleDB to start.
-
-Typical modifications to `postgresql.conf` are
+### TimescaleDB / PostgreSQL configuration
+To enable continuous archiving for the PostgreSQL WAL, the following
+modifications are necessary in `postgresql.conf`:
 
 ```
-archive_command='/usr/bin/wget wale_container_hostname:5000/wal-push/%f -O -'
+archive_command='wget <wale_container_hostname>/wal-push/%f -O -'
 wal_level=archive
 archive_mode=on
-archive_timeout=600
-checkpoint_timeout=700
 ```
 
-### Sidecar configurations
-The WAL-E container is configured using environment variables.
-First, the startup operation is controlled by
-the `START_MODE` variable where the options are `CONTINOUS_BACKUP`, `BACKUP_PUSH`, or `RESTORE`.
+Alternatively, these options can be set on the command line. For
+instance, the TimescaleDB docker image can be run as follows:
 
-MODE | Operation
----- | ----
-BACKUP_PUSH | Pushes a base backup before starting to accept archive commands
-CONTINOUS_BACKUP | Starts up and accepts archive commands
-RESTORE | Fetches a backup, creates a restore.conf, and optionally restores configuration files
+```bash
+docker run -d 5432:5432 timescale/timescaledb postgres \
+-carchive_command='wget <wale_container_hostname>/wal-push/%f -O -' \
+-cwal_level=archive \
+-carchive_mode=on
+```
 
-The backup and restore operation can be further configured through the following variables.
+### Sidecar configuration
+The WAL-E container is configured using the standard WAL-E environment
+variables. In addition, the HTTP frontend expects the following
+environment variables:
 
 Variable | Use | Default
 --- | --- | ---
-WALE_RESTORE_LABEL | label of backup to pull when restoring | LATEST
-WALE_SIDECAR_HOSTNAME | hostname where the sidecar can be reached | localhost
-WALE_LISTEN_PORT | port  | 5000
-WALE_INIT_LOCKFILE | path to lock file | `${PGDATA}/wale_init_lockfile`
-CRON_TIMING | Cron string for periodic backups | "0 0 \* \* \*" (24h)
-RECOVERY_ADDITION | line to add to recovery.conf, typically timestamp for PIT recovery | -
-PGCONF_BACKUP_DIR | directory path holding configuration files to restore after data dir restore | -
+WALE_LISTEN_PORT | port  | 80
 PGDATA | the TimescaleDB/PostgreSQL data dir | `/var/lib/postgresql/data`
-PGWAL | the TimescaleDB/PostgreSQL WAL log dir | `${PGDATA}/pg_wal`
+PGWAL | the TimescaleDB/PostgreSQL WAL log dir (defaults to PostgreSQL 10+ naming) | `${PGDATA}/pg_wal`
 
-### Running WAL-E commands
-The WAL-E container can be used to run arbitrary WAL-E commands using
-the `wal-e` binary. For example, to list the stored backups
-you can run
-```
-docker exec <wale_container_name> wal-e backup-list
-```
 
 [ts-docker]: https://github.com/timescale/timescaledb-docker
