@@ -42,7 +42,7 @@ modifications are necessary in `postgresql.conf`:
 
 ```
 archive_command='wget <wale_container_hostname>/wal-push/%f -O -'
-wal_level=archive
+wal_level=replica
 archive_mode=on
 ```
 
@@ -52,7 +52,7 @@ instance, the TimescaleDB docker image can be run as follows:
 ```bash
 docker run -d 5432:5432 timescale/timescaledb postgres \
 -carchive_command='wget <wale_container_hostname>/wal-push/%f -O -' \
--cwal_level=archive \
+-cwal_level=replica \
 -carchive_mode=on
 ```
 
