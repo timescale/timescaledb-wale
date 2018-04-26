@@ -1,19 +1,16 @@
-FROM python:2.7-stretch
+# Need to use an Alpine image that has python 3.5, since WAL-E doesn't
+# work well with newer Pythons
+FROM alpine:3.5
 
-RUN apt-get update && apt-get install curl lzop pv postgresql-client-9.6 cron -y \
-     && rm -rf /var/lib/apt/lists/*
+# Add run dependencies in its own layer
+RUN apk add --no-cache --virtual .run-deps python3 lzo curl pv postgresql-client
 
-ADD https://bootstrap.pypa.io/get-pip.py .
-RUN python get-pip.py
-
-WORKDIR /usr/src/app
-        
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /
+RUN apk add --no-cache --virtual .build-deps gcc libc-dev lzo-dev python3-dev && \
+    python3 -m pip install --no-cache-dir -r requirements.txt && \
+    apk del .build-deps
 
 COPY src/wale-rest.py .
-COPY start.sh .
-COPY backup_push.sh .
-RUN chmod +x backup_push.sh
+COPY run.sh /
 
-CMD [ "bash", "./start.sh" ]
+CMD [ "/run.sh" ]
