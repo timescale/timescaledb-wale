@@ -23,7 +23,7 @@ to trigger a WAL push.
 WAL-E can be invoked directly by running the image as so:
 
 ```bash
-docker run -it --rm timescale/timescale-wale wal-e <command>
+docker run -it --rm timescale/timescaledb-wale wal-e <command>
 
 ```
 
